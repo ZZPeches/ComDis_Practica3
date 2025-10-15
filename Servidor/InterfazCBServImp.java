@@ -1,14 +1,13 @@
+
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCBServ {
 
     private HashMap<String, InterfazCB> clientes;
-    private HashMap<String, ArrayList<String>> grupos;
 
     private DBManager db; // para base de datos sql
 
@@ -18,10 +17,11 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
         try {
             db = new DBManager("usuarios.db"); // aqui se guarda la base de datos
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
+    @Override
     public void registrar(InterfazCB objetoCli, String id) throws RemoteException {
 
         /*
@@ -33,21 +33,21 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
          */
         if (!(clientes.containsValue(objetoCli))) {
             clientes.put(id, objetoCli);
-        }
-        HashMap<String, InterfazCB> amigosConectados = new HashMap<>();
-        if ((grupos.containsKey(id))) {
-            ArrayList<String> amigos = grupos.get(id);
+            HashMap<String, InterfazCB> amigosConectados = new HashMap<>();
+            List<String> amigos = db.obtenerAmigos(id);
             for (String amigo : amigos) {
                 if (clientes.containsKey(amigo)) {
                     amigosConectados.put(amigo, clientes.get(amigo));
                 }
             }
-            objetoCli.listaAmigos(amigosConectados);
+            objetoCli.listaAmigosEnLinea(amigosConectados);
+            enviarAmigosNuevasConexiones(id, objetoCli, amigosConectados);
+
         }
-        enviarAmigosNuevasConexiones(id, objetoCli, amigosConectados);
 
     }
 
+    @Override
     public synchronized void eliminar(InterfazCB objetoCli, String id) throws RemoteException {
 
         if (!(clientes.containsValue(objetoCli))) {
@@ -58,9 +58,9 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
            * System.out.println("Cliente eliminado del registro");
            * enviarDesconexiones(objetoCli,id);
            * }
-           */else {
+         */ else {
             ArrayList<InterfazCB> amigos = new ArrayList<>();
-            for (String amigo : grupos.get(id)) {
+            for (String amigo : db.obtenerAmigos(id)) {
                 if (clientes.containsKey(amigo)) {
                     amigos.add(clientes.get(amigo));
                 }
@@ -78,8 +78,8 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
 
             try {
                 cliente.notificarDesconexion(id, objetoCli);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (RemoteException e) {
+                System.err.println(e.getMessage());
             }
 
         }
@@ -93,7 +93,7 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
 
             try {
                 cliente.notificarDesconexion(id, objetoCli);
-            } catch (Exception e) {
+            } catch (RemoteException e) {
                 e.printStackTrace();
             }
 
@@ -136,13 +136,21 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
 
     }
 
+    @Override
     public boolean registrarUsuario(String nombre, String clave) throws RemoteException {
         return db.registrarUsuario(nombre, clave);
     }
 
+    @Override
+    public boolean validarUsuarioExistente(String nombre) throws RemoteException {
+        return db.validarUsuarioExistente(nombre);
+    }
+
+    @Override
     public boolean loginUsuario(String nombre, String clave, InterfazCB cli) throws RemoteException {
-        if (!db.validarLogin(nombre, clave))
+        if (!db.validarLogin(nombre, clave)) {
             return false;
+        }
 
         clientes.put(nombre, cli);
 
@@ -161,7 +169,7 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
                 amigosConectados.put(amigo, clientes.get(amigo));
             }
         }
-        cli.listaAmigos(amigosConectados);
+        cli.listaAmigosEnLinea(amigosConectados);
 
         // enviar solicitudes pendientes
         List<String> solicitudes = db.obtenerSolicitudes(nombre);
@@ -170,19 +178,6 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
         }
 
         return true;
-    }
-
-    public void enviarSolicitud(String remitente, String destino) throws RemoteException {
-        db.agregarSolicitud(remitente, destino);
-
-        // está conectado --> enviar aviso
-        if (clientes.containsKey(destino)) {
-            clientes.get(destino).recibirSolicitud(remitente);
-        }
-    }
-
-    public void rechazarSolicitud(String remitente, String destino) throws RemoteException {
-        db.rechazarSolicitud(remitente, destino);
     }
 
     public List<String> obtenerAmigosEnLinea(String nombre) throws RemoteException {
@@ -196,7 +191,64 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
         return amigosEnLinea;
     }
 
+    @Override
+    public boolean enviarSolicitudAmistad(String envia, String recibe) throws RemoteException {
+        try {
+            db.agregarSolicitud(envia, recibe);
+            System.out.println("[Info] Solicitud de amistad de " + envia + " a " + recibe + " enviada.");
 
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
 
+    }
+
+    @Override
+    public java.util.List<String> obtenerAmigos(String nombre) throws RemoteException {
+        return db.obtenerAmigos(nombre);
+    }
+
+    @Override
+    public java.util.List<String> obtenerSolicitudesPendientes(String nombre) throws RemoteException {
+        return db.obtenerSolicitudes(nombre);
+    }
+
+    @Override
+    public boolean aceptarAmistad(String acepta, String recibe) {
+        try {
+            db.agregarAmigos(acepta, recibe);
+            System.out.println("[Info] Solicitud de amistad de " + acepta + " a " + recibe + " aceptada.");
+            // Notificar a ambos usuarios si están conectados
+            if (clientes.containsKey(acepta)) {
+                try {
+                    clientes.get(acepta).notificarNuevaConexion(recibe, clientes.get(recibe));
+                } catch (RemoteException e) {
+                    System.err.println("Error notificando a " + acepta + ": " + e.getMessage());
+                }
+            }
+            if (clientes.containsKey(recibe)) {
+                try {
+                    clientes.get(recibe).notificarNuevaConexion(acepta, clientes.get(acepta));
+                } catch (RemoteException e) {
+                    System.err.println("Error notificando a " + recibe + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean rechazarAmistad(String rechaza, String recibe) {
+        try {
+            db.rechazarSolicitud(rechaza, recibe);
+            System.out.println("[Info] Solicitud de amistad de " + rechaza + " a " + recibe + " rechazada.");
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
+    }
 
 }

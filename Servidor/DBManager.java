@@ -88,6 +88,21 @@ public class DBManager {
         }
     }
 
+
+        // validar login
+    public boolean validarUsuarioExistente(String nombre) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT * FROM usuarios WHERE nombre=?")) {
+            ps.setString(1, nombre);
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean ok = rs.next();
+                return ok;
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     // obtener amigos de un usuario
     public List<String> obtenerAmigos(String nombre) {
         List<String> amigos = new ArrayList<>();

@@ -1,16 +1,17 @@
+
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
 
 public class ServidorCB {
-    
-    public static void main(String[] args){
 
+    public static void main(String[] args) {
+        // COMANDO: java -cp ".:sqlite-jdbc-3.50.3.0.jar" ServidorCB
         Scanner sc = new Scanner(System.in);
-        String puerto,URL;
+        String puerto, URL;
 
-        try{
+        try {
 
             System.out.println("Ingrese puerto: ");
             puerto = sc.nextLine().trim();
@@ -20,26 +21,29 @@ public class ServidorCB {
             URL = "rmi://localhost:" + numPuerto + "/objetoRemoto";
             Naming.rebind(URL, objExp);
             System.out.println("Objeto registrado");
-            String [] nombres = Naming.list(URL);
-            for (int i = 0;i < nombres.length; i++){
+            String[] nombres = Naming.list(URL);
+            for (int i = 0; i < nombres.length; i++) {
                 System.out.println(nombres[i]);
             }
             System.out.println("Servidor listo");
 
             sc.close();
 
-        }catch (Exception e){System.out.println("Exception en main Servidor");e.printStackTrace();}
+        } catch (Exception e) {
+            System.out.println("Exception en main Servidor");
+            e.printStackTrace();
+        }
 
     }
 
     private static void arrancarRegistro(int numPuerto) throws RemoteException {
-        
-        try{
+
+        try {
 
             Registry registro = LocateRegistry.getRegistry(numPuerto);
             registro.list();
 
-        }catch(RemoteException e){
+        } catch (RemoteException e) {
 
             System.out.println("Creando registro en el puerto" + numPuerto);
             LocateRegistry.createRegistry(numPuerto);

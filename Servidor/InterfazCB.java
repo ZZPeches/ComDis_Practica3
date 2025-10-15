@@ -11,4 +11,5 @@ public interface InterfazCB extends Remote{
     public void enviar(String mensaje)throws RemoteException;
     public void recibir(String mensaje)throws RemoteException;
 
+
 }

@@ -13,6 +13,7 @@ public interface InterfazCBServ extends Remote{
     public java.util.List<String> obtenerSolicitudesPendientes(String nombre) throws RemoteException;
     public boolean aceptarAmistad(String acepta, String recibe);
     public boolean rechazarAmistad(String rechaza, String recibe);
+    public void mostrarTodosLosUsuarios();
 
 
 }

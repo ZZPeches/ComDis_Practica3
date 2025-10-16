@@ -1,15 +1,28 @@
-
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+
+import javafx.application.Platform;
+import javafx.collections.ObservableMap;
+import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
 import java.util.HashMap;
+import java.util.List;
 
 public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
-    private HashMap<String, InterfazCB> amigosEnLinea;
+    private ObservableMap<String, InterfazCB> amigosEnLinea = FXCollections.observableHashMap();
+    private ObservableList<String> solicitudesPendientes = FXCollections.observableArrayList();
+
+    public ObservableList<String> getSolicitudesPendientes() {
+        return solicitudesPendientes;
+    }
+
+    public ObservableMap<String, InterfazCB> getAmigosEnLinea() {
+        return amigosEnLinea;
+    }
 
     public InterfazCBImp() throws RemoteException {
         super();
-        this.amigosEnLinea = new HashMap<>();
     }
 
     @Override
@@ -49,6 +62,13 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     @Override
     public void recibirSolicitud(String mensaje) throws RemoteException {
         System.out.println("Has recibido una solicitud de amistad de " + mensaje);
+        this.solicitudesPendientes.add(mensaje);
+    }
+
+    public void recibirSolicitudes(List<String> solicitudesPendientes) throws RemoteException {
+        Platform.runLater(() -> {
+            this.solicitudesPendientes.setAll(solicitudesPendientes);
+        });
     }
 
     @Override

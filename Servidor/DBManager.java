@@ -39,6 +39,24 @@ public class DBManager {
         st.close();
     }
 
+    public void mostrarTodosLosUsuarios() {
+        String sql = "SELECT nombre, clave FROM usuarios";
+        try (Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery(sql)) {
+
+            System.out.println("Lista de usuarios registrados:");
+            while (rs.next()) {
+                String nombre = rs.getString("nombre");
+                String clave = rs.getString("clave");
+                System.out.println("- Nombre: " + nombre + ", Clave: " + clave);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error al obtener usuarios: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public void rechazarSolicitud(String remitente, String destino) {
         try {
             PreparedStatement ps = conn.prepareStatement(

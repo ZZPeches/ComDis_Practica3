@@ -173,9 +173,7 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
 
         // enviar solicitudes pendientes
         List<String> solicitudes = db.obtenerSolicitudes(nombre);
-        for (String remitente : solicitudes) {
-            cli.recibirSolicitud(remitente);
-        }
+        cli.recibirSolicitudes(solicitudes);
 
         return true;
     }
@@ -249,6 +247,10 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
             return false;
         }
         return true;
+    }
+
+    public void mostrarUsuaios(){
+        db.mostrarTodosLosUsuarios();
     }
 
 }

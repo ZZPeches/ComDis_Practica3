@@ -26,6 +26,7 @@ public class ServidorCB {
                 System.out.println(nombres[i]);
             }
             System.out.println("Servidor listo");
+            objExp.mostrarUsuaios();
 
             sc.close();
 

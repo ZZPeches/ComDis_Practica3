@@ -29,8 +29,8 @@ public class VentanaCliente {
         TextField tfNombreUser = new TextField();
         tfNombreUser.setPromptText("Nombre de usuario");
 
-        TextField tfPasswdUser = new TextField();
-        tfPasswdUser.setPromptText("Contraseña");
+        PasswordField pfPasswdUser = new PasswordField();
+        pfPasswdUser.setPromptText("Contraseña");
 
         Button btnLogin = new Button("Login");
         Button btnCerrar = new Button("Cerrar");
@@ -43,7 +43,7 @@ public class VentanaCliente {
         root.setTop(lblBienvenida);
         BorderPane.setMargin(lblBienvenida, new Insets(10));
 
-        root.setCenter(new VBox(10, tfNombreUser, tfPasswdUser, lblStatus));
+        root.setCenter(new VBox(10, tfNombreUser, pfPasswdUser, lblStatus));
         root.setBottom(botonesLogin);
         BorderPane.setMargin(botonesLogin, new Insets(10));
 
@@ -51,8 +51,8 @@ public class VentanaCliente {
 
         // --- ESCENA REGISTRO ---
         Label lblRegistro = new Label("Registro");
-        TextField tfPasswdScene2 = new TextField();
-        tfPasswdScene2.setPromptText("Introduzca su contraseña");
+        PasswordField pfPasswdScene2 = new PasswordField();
+        pfPasswdScene2.setPromptText("Introduzca su contraseña");
 
         Button btnSi = new Button("Si");
         Button btnNo = new Button("No");
@@ -62,7 +62,7 @@ public class VentanaCliente {
         root2.setTop(lblRegistro);
         BorderPane.setMargin(lblRegistro, new Insets(10));
 
-        root2.setCenter(tfPasswdScene2);
+        root2.setCenter(pfPasswdScene2);
         root2.setBottom(botonesRegistro);
         BorderPane.setMargin(botonesRegistro, new Insets(10));
 
@@ -78,7 +78,7 @@ public class VentanaCliente {
                 if(!servidor.validarUsuarioExistente(nombreUser)){
                     stage.setScene(scene2);
                 } else {
-                    if(servidor.loginUsuario(nombreUser, tfPasswdUser.getText().trim(), cliente)){
+                    if(servidor.loginUsuario(nombreUser, pfPasswdUser.getText().trim(), cliente)){
                         VentanaUsuario ventanaUsuario = new VentanaUsuario(stage, servidor, cliente,nombreUser);
                         ventanaUsuario.mostrar();
                     }
@@ -91,10 +91,10 @@ public class VentanaCliente {
 
         btnSi.setOnAction(e -> {
             try {
-                if(tfPasswdScene2.getText().trim().isEmpty()){
+                if(pfPasswdScene2.getText().trim().isEmpty()){
                     lblStatus.setText("Debe introducir una contraseña");
                 } else {
-                    servidor.registrarUsuario(nombreUser, tfPasswdScene2.getText().trim());
+                    servidor.registrarUsuario(nombreUser, pfPasswdScene2.getText().trim());
                     stage.setScene(scene);
                 }
             } catch (Exception ex) {

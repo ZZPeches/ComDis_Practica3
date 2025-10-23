@@ -14,11 +14,14 @@ public class VentanaConectar {
     }
 
     public void mostrar() {
+
         TextField tfHostname = new TextField();
         tfHostname.setPromptText("Introduzca el nombre del nodo");
+        tfHostname.setText("localhost");
 
         TextField tfPuerto = new TextField();
         tfPuerto.setPromptText("Introduzca el puerto");
+        tfPuerto.setText("9000");
 
         Button btnConectar = new Button("Conectar");
         Label lblStatus = new Label();

@@ -67,7 +67,7 @@ public class VentanaUsuario {
         //Creacion de menus
         MenuBar barraMenu = new MenuBar();
 
-        Menu menuSolicitudes = new Menu("Agregar");
+        Menu menuSolicitudes = new Menu("Solicitudes");
         MenuItem agregar = new MenuItem("Agregar");
 
         agregar.setOnAction(e -> {
@@ -95,12 +95,30 @@ public class VentanaUsuario {
         ListView<String> listaAmistades = new ListView<>(lista1Items);
         ListView<String> listaSolicitudes = new ListView<>(cliente.getSolicitudesPendientes());
 
+        Button btnAceptar = new Button("Aceptar");
+        btnAceptar.setVisible(false);
+
         listaAmistades.setPrefSize(200, 300); // ancho x alto
         listaSolicitudes.setPrefSize(200, 300);
 
+        listaSolicitudes.getSelectionModel()
+        .selectedItemProperty()
+        .addListener((observable,oldValue,newValue) -> {
+            if (newValue != null){
+                btnAceptar.setVisible(true);
+            }else{
+                btnAceptar.setVisible(false);
+            }
+        });
+
+        btnAceptar.setOnAction(e -> {
+            String recibe = listaSolicitudes.getSelectionModel().getSelectedItem();
+            servidor.aceptarAmistad(nombreUser, recibe);
+        });
+
         // --- Crear etiquetas para cada lista ---
         VBox vboxLista1 = new VBox(5, new Label("Amigos en linea"), listaAmistades);
-        VBox vboxLista2 = new VBox(5, new Label("Solicitudes de amistad"), listaSolicitudes);
+        VBox vboxLista2 = new VBox(5, new Label("Solicitudes de amistad"), listaSolicitudes, btnAceptar);
 
         vboxLista1.setAlignment(Pos.TOP_CENTER);
         vboxLista2.setAlignment(Pos.TOP_CENTER);

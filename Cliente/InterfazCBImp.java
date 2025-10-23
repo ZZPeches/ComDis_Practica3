@@ -54,6 +54,9 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
             observador.mensajeRecibido(remitente, mensaje);
         }
     }
+    public void recibirMensajePrivado(String remitente, String mensaje) throws RemoteException {
+
+    }
 
     @Override
     public void enviar(String remitente, String mensaje) throws RemoteException {
@@ -65,6 +68,17 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
                 e.printStackTrace();
             }
         }
+    }
+
+
+    public void enviarMensajePrivado(String remitente, String mensaje, String receptor) throws RemoteException {
+            try {
+                amigosEnLinea.get(mensaje).recibirMensajePrivado(remitente, mensaje);
+            } catch (Exception e) {
+                System.out.println("Exception en envío");
+                e.printStackTrace();
+            }
+
     }
 
     @Override
@@ -101,6 +115,8 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         this.solicitudesPendientes.add(envia);
         this.observador.notificarSolicitud();
     }
+
+
 
 
 }

@@ -33,6 +33,8 @@ public class VentanaUsuario implements ObservadorChat  {
     private VBox chatLogContainer;
     private TextFlow chatLog;
     private ListView<String> listaSolicitudes;
+    private Button btnChatPrivado;
+    private VentanaChatPrivado ventanaChatActual; //solo unha á vez
     public VentanaUsuario(Stage stage, InterfazCBServ servidor, InterfazCBImp cliente, String nombreUser) {
 
         this.stage = stage;
@@ -100,6 +102,9 @@ public class VentanaUsuario implements ObservadorChat  {
         Button btnRechazar = new Button("Rechazar");
         btnRechazar.setVisible(false);
 
+        btnChatPrivado = new Button("Chat Privado");
+        btnChatPrivado.setVisible(false);
+
         listaAmistades.setPrefSize(200, 300); // ancho x alto
         listaSolicitudes.setPrefSize(200, 300);
 
@@ -112,6 +117,16 @@ public class VentanaUsuario implements ObservadorChat  {
                     }else{
                         btnAceptar.setVisible(false);
                         btnRechazar.setVisible(false);
+                    }
+                });
+
+        listaAmistades.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable,oldValue,newValue) -> {
+                    if (newValue != null){
+                        btnChatPrivado.setVisible(true);
+                    }else{
+                        btnChatPrivado.setVisible(false);
                     }
                 });
 
@@ -130,7 +145,15 @@ public class VentanaUsuario implements ObservadorChat  {
             btnAceptar.setVisible(false);
             btnRechazar.setVisible(false);
         });
-// chatlog (con todos tus amigos)
+
+        btnChatPrivado.setOnAction(e -> {
+            String amigoSeleccionado = listaAmistades.getSelectionModel().getSelectedItem();
+            if (amigoSeleccionado != null) {
+                crearVentanaChatPrivado(amigoSeleccionado);
+            }
+        });
+
+        // chatlog (con todos tus amigos)
         chatLog = new TextFlow();
         chatLog.setPadding(new Insets(5));
 
@@ -139,7 +162,7 @@ public class VentanaUsuario implements ObservadorChat  {
         chatScrollPane.setPrefHeight(400);
         chatScrollPane.setVvalue(1.0); // Start at bottom
 
-// Auto-scroll when content changes
+        // Auto-scroll when content changes
         chatLog.heightProperty().addListener((obs, oldHeight, newHeight) -> {
             Platform.runLater(() -> {
                 chatScrollPane.setVvalue(1.0);
@@ -164,7 +187,7 @@ public class VentanaUsuario implements ObservadorChat  {
             }
         });
 
-// Enter key también envía el mensaje
+        // Enter key también envía el mensaje
         chatInput.setOnAction(e -> btnEnviar.fire());
 
         HBox chatControls = new HBox(5, chatInput, btnEnviar);
@@ -174,7 +197,7 @@ public class VentanaUsuario implements ObservadorChat  {
         chatRoom.setPrefWidth(300);
 
         // Crear etiquetas para cada lista
-        VBox vboxLista1 = new VBox(5, new Label("Amigos en linea"), listaAmistades);
+        VBox vboxLista1 = new VBox(5, new Label("Amigos en linea"), listaAmistades, btnChatPrivado);
         VBox vboxLista2 = new VBox(5, new Label("Solicitudes de amistad"), listaSolicitudes, btnAceptar, btnRechazar);
 
         vboxLista1.setAlignment(Pos.TOP_CENTER);
@@ -193,6 +216,34 @@ public class VentanaUsuario implements ObservadorChat  {
         stage.setScene(scene);
         stage.setTitle("Ventana Usuario: " + nombreUser);
         stage.show();
+    }
+
+    private void crearVentanaChatPrivado(String amigo) {
+        if (ventanaChatActual != null) {
+            // cerrar a previa
+            ventanaChatActual.getStage().close();
+        }
+
+        ventanaChatActual = new VentanaChatPrivado(stage, cliente, nombreUser, amigo);
+        ventanaChatActual.getStage().setOnHidden(e -> {
+            ventanaChatActual = null;
+        });
+
+        ventanaChatActual.mostrar();
+    }
+
+
+    private void agregarMensajePrivado(TextFlow chatLog, ScrollPane scrollPane, String remitente, String mensaje, Color color) {
+        Platform.runLater(() -> {
+            String timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            String texto = "[" + timestamp + "] <" + remitente + ">: " + mensaje + "\n";
+            Text textNode = new Text(texto);
+            if (color != null) {
+                textNode.setFill(color);
+            }
+            chatLog.getChildren().add(textNode);
+            scrollPane.setVvalue(1.0);
+        });
     }
 
     // metodo que interactua coa GUI

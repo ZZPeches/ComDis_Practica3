@@ -24,4 +24,5 @@ public interface InterfazCBServ extends Remote {
 
     public boolean rechazarAmistad(String rechaza, String recibe) throws RemoteException;
 
+
 }

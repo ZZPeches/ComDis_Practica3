@@ -82,6 +82,12 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
     @Override
     public void errorAmigo() {
-
+        javafx.application.Platform.runLater(() ->
+                ErrorPopup.show("Error: No puedes enviar una petición de amistad a este usuario.")
+        );
     }
+
+
+
+
 }

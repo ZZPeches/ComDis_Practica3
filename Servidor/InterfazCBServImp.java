@@ -245,13 +245,15 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
     @Override
     public boolean rechazarAmistad(String rechaza, String recibe) {
         try {
-            db.rechazarSolicitud(rechaza, recibe);
-            System.out.println("[Info] Solicitud de amistad de " + rechaza + " a " + recibe + " rechazada.");
+            db.rechazarSolicitud(recibe, rechaza); // remitente = quien envió la solicitud, destino = quien rechaza
+            System.out.println("[Info] Solicitud de amistad de " + recibe + " a " + rechaza + " rechazada.");
+            clientes.get(rechaza).recibirSolicitudes(db.obtenerSolicitudes(rechaza));
         } catch (Exception e) {
             return false;
         }
         return true;
     }
+
 
     public void mostrarUsuaios(){
         db.mostrarTodosLosUsuarios();

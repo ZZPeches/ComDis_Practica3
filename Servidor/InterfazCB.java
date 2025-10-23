@@ -20,7 +20,7 @@ public interface InterfazCB extends Remote {
 
     public void nuevoAmigo(String id, InterfazCB amigo) throws RemoteException;
 
-    public void errorAmigo();
+    public void errorAmigo() throws  RemoteException;
     public void listaAmigosEnLinea(HashMap<String, InterfazCB> amigosEnLinea) throws RemoteException;
 
 }

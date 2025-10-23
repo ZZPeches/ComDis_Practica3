@@ -88,27 +88,44 @@ public class VentanaUsuario {
         Button btnAceptar = new Button("Aceptar");
         btnAceptar.setVisible(false);
 
+        Button btnRechazar = new Button("Rechazar");
+        btnRechazar.setVisible(false);
+
         listaAmistades.setPrefSize(200, 300); // ancho x alto
         listaSolicitudes.setPrefSize(200, 300);
 
         listaSolicitudes.getSelectionModel()
-        .selectedItemProperty()
-        .addListener((observable,oldValue,newValue) -> {
-            if (newValue != null){
-                btnAceptar.setVisible(true);
-            }else{
-                btnAceptar.setVisible(false);
-            }
-        });
+                .selectedItemProperty()
+                .addListener((observable,oldValue,newValue) -> {
+                    if (newValue != null){
+                        btnAceptar.setVisible(true);
+                        btnRechazar.setVisible(true);
+                    }else{
+                        btnAceptar.setVisible(false);
+                        btnRechazar.setVisible(false);
+                    }
+                });
 
         btnAceptar.setOnAction(e -> {
             String recibe = listaSolicitudes.getSelectionModel().getSelectedItem();
             servidor.aceptarAmistad(nombreUser, recibe);
+            listaSolicitudes.getItems().setAll(cliente.getSolicitudesPendientes());
+            btnAceptar.setVisible(false);
+            btnRechazar.setVisible(false);
         });
+
+        btnRechazar.setOnAction(e -> {
+            String recibe = listaSolicitudes.getSelectionModel().getSelectedItem();
+            servidor.rechazarAmistad(nombreUser, recibe);
+            listaSolicitudes.getItems().setAll((cliente.getSolicitudesPendientes()));
+            btnAceptar.setVisible(false);
+            btnRechazar.setVisible(false);
+        });
+
 
         // --- Crear etiquetas para cada lista ---
         VBox vboxLista1 = new VBox(5, new Label("Amigos en linea"), listaAmistades);
-        VBox vboxLista2 = new VBox(5, new Label("Solicitudes de amistad"), listaSolicitudes, btnAceptar);
+        VBox vboxLista2 = new VBox(5, new Label("Solicitudes de amistad"), listaSolicitudes, btnAceptar, btnRechazar);
 
         vboxLista1.setAlignment(Pos.TOP_CENTER);
         vboxLista2.setAlignment(Pos.TOP_CENTER);

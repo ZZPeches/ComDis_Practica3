@@ -56,7 +56,7 @@ public class VentanaCliente {
         Scene scene = new Scene(root, 400, 250);
 
         // --- ESCENA REGISTRO ---
-        Label lblRegistro = new Label("Registro");
+        Label lblRegistro = new Label("Usuario no encontrado. Por favor, regístrese.");
         PasswordField pfPasswdScene2 = new PasswordField();
         pfPasswdScene2.setPromptText("Introduzca su contraseña");
 
@@ -87,6 +87,11 @@ public class VentanaCliente {
                     if(servidor.loginUsuario(nombreUser, pfPasswdUser.getText().trim(), cliente)){
                         VentanaUsuario ventanaUsuario = new VentanaUsuario(stage, servidor, cliente,nombreUser);
                         ventanaUsuario.mostrar();
+                    }
+                    else {
+                            javafx.application.Platform.runLater(() ->
+                                    ErrorPopup.show("Error: Nombre de usuario o contraseña incorrectos.")
+                            );
                     }
                 }
             } catch (Exception ex) {

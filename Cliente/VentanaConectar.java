@@ -1,15 +1,18 @@
-import java.rmi.Naming;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class VentanaConectar {
+import java.rmi.Naming;
+
+public class VentanaConectarOld {
 
     private Stage stage;
 
-    public VentanaConectar(Stage stage) {
+    public VentanaConectarOld(Stage stage) {
         this.stage = stage;
     }
 

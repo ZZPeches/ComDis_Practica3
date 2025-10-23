@@ -47,7 +47,12 @@ public class VentanaCliente {
         root.setBottom(botonesLogin);
         BorderPane.setMargin(botonesLogin, new Insets(10));
 
-        Scene scene = new Scene(root, 400, 200);
+        // márgenes individuales entre los nodos del VBox
+        VBox.setMargin(tfNombreUser, new Insets(5));
+        VBox.setMargin(pfPasswdUser, new Insets(5));
+        VBox.setMargin(lblStatus, new Insets(10, 0, 0, 0));
+
+        Scene scene = new Scene(root, 400, 250);
 
         // --- ESCENA REGISTRO ---
         Label lblRegistro = new Label("Registro");

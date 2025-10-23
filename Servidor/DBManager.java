@@ -42,7 +42,7 @@ public class DBManager {
     public void mostrarTodosLosUsuarios() {
         String sql = "SELECT nombre, clave FROM usuarios";
         try (Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery(sql)) {
+             ResultSet rs = st.executeQuery(sql)) {
 
             System.out.println("Lista de usuarios registrados:");
             while (rs.next()) {
@@ -107,10 +107,10 @@ public class DBManager {
     }
 
 
-        // validar login
+    // validar login
     public boolean validarUsuarioExistente(String nombre) {
         try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT * FROM usuarios WHERE nombre=?")) {
+                "SELECT * FROM usuarios WHERE nombre=?")) {
             ps.setString(1, nombre);
             try (ResultSet rs = ps.executeQuery()) {
                 boolean ok = rs.next();
@@ -172,16 +172,46 @@ public class DBManager {
     }
 
     // añadir solicitud pendiente
-    public void agregarSolicitud(String remitente, String destino) {
+    public boolean agregarSolicitud(String remitente, String destino) {
         try {
+            // comprobar si ya son amigos
+            PreparedStatement psAmigos = conn.prepareStatement(
+                    "SELECT 1 FROM amigos WHERE usuario1=? AND usuario2=?");
+            psAmigos.setString(1, remitente);
+            psAmigos.setString(2, destino);
+            ResultSet rsAmigos = psAmigos.executeQuery();
+            if (rsAmigos.next()) {
+                rsAmigos.close();
+                psAmigos.close();
+                return false;
+            }
+            rsAmigos.close();
+            psAmigos.close();
+
+            // comprobar si ya hay una solicitud pendiente
+            PreparedStatement psSolicitud = conn.prepareStatement(
+                    "SELECT 1 FROM solicitudes WHERE remitente=? AND destino=?");
+            psSolicitud.setString(1, remitente);
+            psSolicitud.setString(2, destino);
+            ResultSet rsSolicitud = psSolicitud.executeQuery();
+            if (rsSolicitud.next()) {
+                rsSolicitud.close();
+                psSolicitud.close();
+                return false;
+            }
+            rsSolicitud.close();
+            psSolicitud.close();
+
             PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO solicitudes(remitente, destino) VALUES(?, ?)");
             ps.setString(1, remitente);
             ps.setString(2, destino);
             ps.executeUpdate();
             ps.close();
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            throw new RuntimeException(e.getMessage());
         }
     }
 

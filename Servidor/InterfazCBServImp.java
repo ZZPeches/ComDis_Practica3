@@ -192,9 +192,13 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
     @Override
     public boolean enviarSolicitudAmistad(String envia, String recibe) throws RemoteException {
         try {
-            db.agregarSolicitud(envia, recibe);
-            System.out.println("[Info] Solicitud de amistad de " + envia + " a " + recibe + " enviada.");
-
+            if(db.agregarSolicitud(envia, recibe)) {
+                System.out.println("[Info] Solicitud de amistad de " + envia + " a " + recibe + " enviada.");
+            }
+            else{
+                InterfazCB objetoCli = clientes.get(envia);
+                objetoCli.errorAmigo();
+            }
         } catch (Exception e) {
             return false;
         }

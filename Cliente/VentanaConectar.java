@@ -8,11 +8,11 @@ import javafx.stage.Stage;
 
 import java.rmi.Naming;
 
-public class VentanaConectarOld {
+public class VentanaConectar {
 
     private Stage stage;
 
-    public VentanaConectarOld(Stage stage) {
+    public VentanaConectar(Stage stage) {
         this.stage = stage;
     }
 

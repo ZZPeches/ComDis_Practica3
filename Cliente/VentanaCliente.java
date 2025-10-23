@@ -9,14 +9,14 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class VentanaClienteOld {
+public class VentanaCliente {
 
     private Stage stage;
     private InterfazCBServ servidor;
     private InterfazCBImp cliente;
     private String nombreUser = "";
 
-    public VentanaClienteOld(Stage stage, InterfazCBServ servidor, InterfazCBImp cliente) {
+    public VentanaCliente(Stage stage, InterfazCBServ servidor, InterfazCBImp cliente) {
         this.stage = stage;
         this.servidor = servidor;
         this.cliente = cliente;

@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 
 public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
-
     private ObservableMap<String, InterfazCB> amigosEnLinea = FXCollections.observableHashMap();
     private ObservableList<String> solicitudesPendientes = FXCollections.observableArrayList();
 
@@ -79,5 +78,10 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         for (String id : amigosEnLinea.keySet()) {
             System.out.println("- " + id);
         }
+    }
+
+    @Override
+    public void errorAmigo() {
+
     }
 }

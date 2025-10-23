@@ -1,1 +1,6 @@
 Cliente/libjfxwebkit.so
+out/
+.idea/
+*.class
+*.jar
+*.iml

@@ -10,9 +10,10 @@ public interface InterfazCB extends Remote {
 
     public void notificarDesconexion(String id, InterfazCB amigo) throws RemoteException;
 
-    public void enviar(String mensaje) throws RemoteException;
+    public void enviar(String remitente, String mensaje) throws RemoteException;
 
-    public void recibir(String mensaje) throws RemoteException;
+    public void recibir(String remitente, String mensaje) throws RemoteException;
+    public void notificarNuevaSolicitud(String envia) throws RemoteException;
 
     public void recibirSolicitud(String mensaje) throws RemoteException;
 

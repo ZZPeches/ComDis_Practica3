@@ -174,6 +174,11 @@ public class DBManager {
     // añadir solicitud pendiente
     public boolean agregarSolicitud(String remitente, String destino) {
         try {
+            // comprobar si el usuario destino existe
+            if (!validarUsuarioExistente(destino)) {
+                return false; // usuario destino no existe
+            }
+
             // comprobar si ya son amigos
             PreparedStatement psAmigos = conn.prepareStatement(
                     "SELECT 1 FROM amigos WHERE usuario1=? AND usuario2=?");

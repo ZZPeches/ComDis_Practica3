@@ -152,13 +152,14 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
             return false;
         }
 
-        clientes.put(nombre, cli);
+        InterfazCB put = clientes.put(nombre, cli);
 
-        // notificar a amigos conectados
         List<String> amigos = db.obtenerAmigos(nombre);
+        System.out.println(amigos.toString());
         for (String amigo : amigos) {
             if (clientes.containsKey(amigo)) {
                 clientes.get(amigo).notificarNuevaConexion(nombre, cli);
+                System.out.println("Cliente " + amigo + " registrado");
             }
         }
 
@@ -192,11 +193,16 @@ public class InterfazCBServImp extends UnicastRemoteObject implements InterfazCB
     @Override
     public boolean enviarSolicitudAmistad(String envia, String recibe) throws RemoteException {
         try {
+            InterfazCB objetoCli = clientes.get(envia);
             if(db.agregarSolicitud(envia, recibe)) {
                 System.out.println("[Info] Solicitud de amistad de " + envia + " a " + recibe + " enviada.");
+                // comprobar si el receptor está en linea, si lo está, se le avisa instantaneamente
+                if (clientes.containsKey(recibe)) {
+                    InterfazCB receptor = clientes.get(recibe);
+                    receptor.notificarNuevaSolicitud(envia);
+                }
             }
             else{
-                InterfazCB objetoCli = clientes.get(envia);
                 objetoCli.errorAmigo();
             }
         } catch (Exception e) {

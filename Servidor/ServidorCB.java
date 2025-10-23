@@ -13,9 +13,12 @@ public class ServidorCB {
 
         try {
 
-            System.out.println("Ingrese puerto: ");
+            System.out.println("Ingrese puerto (predeterminado: 9000): ");
             puerto = sc.nextLine().trim();
-            int numPuerto = Integer.parseInt(puerto);
+            int numPuerto = puerto.isEmpty() ? 9000 : Integer.parseInt(puerto);
+            if (puerto.isEmpty()) {
+                System.out.println("Usando puerto por defecto: 9000");
+            }
             arrancarRegistro(numPuerto);
             InterfazCBServImp objExp = new InterfazCBServImp();
             URL = "rmi://localhost:" + numPuerto + "/objetoRemoto";
@@ -46,9 +49,9 @@ public class ServidorCB {
 
         } catch (RemoteException e) {
 
-            System.out.println("Creando registro en el puerto" + numPuerto);
+            System.out.println("Creando registro en el puerto " + numPuerto + "...");
             LocateRegistry.createRegistry(numPuerto);
-            System.out.println("Registro creado en el puerto " + numPuerto);
+            System.out.println("Registro creado en el puerto " + numPuerto + "!");
 
         }
 

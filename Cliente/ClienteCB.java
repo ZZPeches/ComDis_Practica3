@@ -84,7 +84,7 @@ public class ClienteCB {
 
                         System.out.print("Escribe el mensaje: ");
                         String texto = sc.nextLine().trim();
-                        objetoCli.enviar(texto);
+                        //objetoCli.enviar(texto);
                         break;
                     }
 

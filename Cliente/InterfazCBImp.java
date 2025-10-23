@@ -19,11 +19,17 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     public ObservableMap<String, InterfazCB> getAmigosEnLinea() {
         return amigosEnLinea;
     }
+    private ObservadorChat observador;
+
+
+
 
     public InterfazCBImp() throws RemoteException {
         super();
     }
-
+    public void setObservadorChat(ObservadorChat observador) {
+        this.observador = observador;
+    }
     @Override
     public void nuevoAmigo(String id, InterfazCB amigo) throws RemoteException {
         amigosEnLinea.put(id, amigo);
@@ -32,25 +38,28 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     @Override
     public void notificarNuevaConexion(String id, InterfazCB amigo) throws RemoteException {
         amigosEnLinea.put(id, amigo);
-        System.out.println("Tu amigo " + id + " está en línea.");
+
+        this.observador.notificarConexion(id);
     }
 
     @Override
     public void notificarDesconexion(String id, InterfazCB amigo) throws RemoteException {
         amigosEnLinea.remove(id);
-        System.out.println("Tu amigo " + id + " se ha desconectado.");
+        this.observador.notificarDesconexion(id);
     }
 
     @Override
-    public void recibir(String mensaje) throws RemoteException {
-        System.out.println(mensaje);
+    public void recibir(String remitente, String mensaje) throws RemoteException {
+        if (observador != null) {
+            observador.mensajeRecibido(remitente, mensaje);
+        }
     }
 
     @Override
-    public void enviar(String mensaje) throws RemoteException {
+    public void enviar(String remitente, String mensaje) throws RemoteException {
         for (InterfazCB amigo : this.amigosEnLinea.values()) {
             try {
-                amigo.recibir(mensaje);
+                amigo.recibir(remitente, mensaje);
             } catch (Exception e) {
                 System.out.println("Exception en envío");
                 e.printStackTrace();
@@ -87,7 +96,11 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         );
     }
 
-
+    @Override
+    public void notificarNuevaSolicitud(String envia){
+        this.solicitudesPendientes.add(envia);
+        this.observador.notificarSolicitud();
+    }
 
 
 }

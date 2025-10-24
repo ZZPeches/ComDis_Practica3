@@ -18,9 +18,8 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-
 import java.rmi.RemoteException;
-
+import java.util.List;
 
 public class VentanaUsuario implements ObservadorChat  {
 
@@ -33,8 +32,10 @@ public class VentanaUsuario implements ObservadorChat  {
     private VBox chatLogContainer;
     private TextFlow chatLog;
     private ListView<String> listaSolicitudes;
+    private ListView<String> listaAmistades;
     private Button btnChatPrivado;
     private VentanaChatPrivado ventanaChatActual; //solo unha á vez
+
     public VentanaUsuario(Stage stage, InterfazCBServ servidor, InterfazCBImp cliente, String nombreUser) {
 
         this.stage = stage;
@@ -45,6 +46,7 @@ public class VentanaUsuario implements ObservadorChat  {
         cliente.setObservadorChat(this);
 
     }
+
 
     public void mostrar() {
 
@@ -73,28 +75,33 @@ public class VentanaUsuario implements ObservadorChat  {
         MenuItem agregar = new MenuItem("Agregar");
 
         agregar.setOnAction(e -> {
-
             popup.show();
-
         });
 
         menuSolicitudes.getItems().addAll(agregar);
         barraMenu.getMenus().addAll(menuSolicitudes);
 
         //Crear listas actulizables
-        ObservableList<String> lista1Items = FXCollections.observableArrayList(
-                amigos.keySet()
-        );
+        ObservableList<String> lista1Items = FXCollections.observableArrayList();
 
-        // Listener que se ejecuta cuando cambia el ObservableMap
+        // Actualizar lista de amigos con indicadores de mensajes pendientes
+        actualizarListaAmigosConNotificaciones(lista1Items);
+
+        // Listener que se ejecuta cuando cambia el ObservableMap de amigos
         amigos.addListener((MapChangeListener.Change<? extends String, ? extends InterfazCB> change) -> {
             Platform.runLater(() -> {
-                // Actualiza la lista visual con las claves del mapa
-                lista1Items.setAll(amigos.keySet());
+                actualizarListaAmigosConNotificaciones(lista1Items);
             });
         });
 
-        ListView<String> listaAmistades = new ListView<>(lista1Items);
+        // actualizar cuando hay nuevos mensajes pendientes
+        cliente.getUsuariosConMensajesPendientes().addListener((javafx.collections.ListChangeListener.Change<? extends String> change) -> {
+            Platform.runLater(() -> {
+                actualizarListaAmigosConNotificaciones(lista1Items);
+            });
+        });
+
+        listaAmistades = new ListView<>(lista1Items);
         listaSolicitudes = new ListView<>(cliente.getSolicitudesPendientes());
         Button btnAceptar = new Button("Aceptar");
         btnAceptar.setVisible(false);
@@ -149,7 +156,9 @@ public class VentanaUsuario implements ObservadorChat  {
         btnChatPrivado.setOnAction(e -> {
             String amigoSeleccionado = listaAmistades.getSelectionModel().getSelectedItem();
             if (amigoSeleccionado != null) {
-                crearVentanaChatPrivado(amigoSeleccionado);
+                // Limpiar el indicador de mensajes pendientes
+                String amigoLimpio = amigoSeleccionado.replace("  [!]", "");
+                crearVentanaChatPrivado(amigoLimpio);
             }
         });
 
@@ -160,9 +169,8 @@ public class VentanaUsuario implements ObservadorChat  {
         chatScrollPane = new ScrollPane(chatLog);
         chatScrollPane.setFitToWidth(true);
         chatScrollPane.setPrefHeight(400);
-        chatScrollPane.setVvalue(1.0); // Start at bottom
+        chatScrollPane.setVvalue(1.0);
 
-        // Auto-scroll when content changes
         chatLog.heightProperty().addListener((obs, oldHeight, newHeight) -> {
             Platform.runLater(() -> {
                 chatScrollPane.setVvalue(1.0);
@@ -193,7 +201,7 @@ public class VentanaUsuario implements ObservadorChat  {
         HBox chatControls = new HBox(5, chatInput, btnEnviar);
         chatControls.setAlignment(Pos.CENTER);
 
-        VBox chatRoom = new VBox(5, new Label("Chat"), chatScrollPane, chatControls); // ← Use chatScrollPane here
+        VBox chatRoom = new VBox(5, new Label("Chat"), chatScrollPane, chatControls);
         chatRoom.setPrefWidth(300);
 
         // Crear etiquetas para cada lista
@@ -204,7 +212,7 @@ public class VentanaUsuario implements ObservadorChat  {
         vboxLista2.setAlignment(Pos.TOP_CENTER);
         chatRoom.setAlignment(Pos.CENTER);
 
-        HBox hboxListas = new HBox(10, vboxLista1, chatRoom, vboxLista2); // 10px de espacio entre secciones
+        HBox hboxListas = new HBox(10, vboxLista1, chatRoom, vboxLista2);
         hboxListas.setPadding(new Insets(15));
         hboxListas.setAlignment(Pos.CENTER);
 
@@ -212,10 +220,22 @@ public class VentanaUsuario implements ObservadorChat  {
         root.setTop(barraMenu);
         root.setCenter(hboxListas);
 
-        Scene scene = new Scene(root, 800, 500); // Ventana más grande para acomodar el chat
+        Scene scene = new Scene(root, 800, 500);
         stage.setScene(scene);
         stage.setTitle("Ventana Usuario: " + nombreUser);
         stage.show();
+    }
+
+    private void actualizarListaAmigosConNotificaciones(ObservableList<String> listaItems) {
+        listaItems.clear();
+        for (String amigo : amigos.keySet()) {
+            String nombreAmigo = amigo;
+            // verificar si este amigo tiene mensajes pendientes
+            if (cliente.getUsuariosConMensajesPendientes().contains(amigo)) {
+                nombreAmigo += "  [!]"; // Añadir emoji de notificación
+            }
+            listaItems.add(nombreAmigo);
+        }
     }
 
     private void crearVentanaChatPrivado(String amigo) {
@@ -227,22 +247,47 @@ public class VentanaUsuario implements ObservadorChat  {
         ventanaChatActual = new VentanaChatPrivado(stage, cliente, nombreUser, amigo);
         ventanaChatActual.getStage().setOnHidden(e -> {
             ventanaChatActual = null;
+            // Actualizar la lista para quitar el indicador de mensajes
+            Platform.runLater(() -> {
+                ObservableList<String> items = listaAmistades.getItems();
+                for (int i = 0; i < items.size(); i++) {
+                    String item = items.get(i);
+                    if (item.contains(amigo)) {
+                        items.set(i, amigo); // Quitar el emoji
+                        break;
+                    }
+                }
+            });
         });
 
         ventanaChatActual.mostrar();
     }
 
-
-    private void agregarMensajePrivado(TextFlow chatLog, ScrollPane scrollPane, String remitente, String mensaje, Color color) {
-        Platform.runLater(() -> {
-            String timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
-            String texto = "[" + timestamp + "] <" + remitente + ">: " + mensaje + "\n";
-            Text textNode = new Text(texto);
-            if (color != null) {
-                textNode.setFill(color);
+    // devuelve true si la ventana ya está abierta y no hay que guardar el mensaje en buzon
+    // devuelve false si hay que guardar el mensaje en buzon de entrada
+    @Override
+    public boolean mensajeRecibidoPrivado(String remitente, String mensaje){
+        if (ventanaChatActual!=null) {
+            if (ventanaChatActual.getAmigo().equals(remitente)) {
+                ventanaChatActual.agregarMensaje(remitente, mensaje);
+                return true;
             }
-            chatLog.getChildren().add(textNode);
-            scrollPane.setVvalue(1.0);
+        }
+        return false;
+    }
+
+    @Override
+    public void notificarMensajesPendientes(String remitente) {
+        Platform.runLater(() -> {
+            // Actualizar la lista de amigos para mostrar el indicador
+            ObservableList<String> items = listaAmistades.getItems();
+            for (int i = 0; i < items.size(); i++) {
+                String item = items.get(i);
+                if (item.equals(remitente) && !item.contains(" [!]")) {
+                    items.set(i, remitente + "  [!]");
+                    break;
+                }
+            }
         });
     }
 
@@ -258,12 +303,12 @@ public class VentanaUsuario implements ObservadorChat  {
         });
     }
 
-
     private void agregarMensajeChat(String remitente, String mensaje) {
         String timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
         String texto = "[" + timestamp + "] <" + remitente + ">: " + mensaje;
         agregarLineaChat(texto, null);
     }
+
     //igual que agregarmensaje pero con color custom
     private void agregarNotificacionSistema(String mensaje, Color color) {
         agregarLineaChat(mensaje, color);
@@ -294,5 +339,4 @@ public class VentanaUsuario implements ObservadorChat  {
             listaSolicitudes.setItems(cliente.getSolicitudesPendientes());
         });
     }
-
 }

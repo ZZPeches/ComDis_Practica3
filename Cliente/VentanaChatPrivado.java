@@ -14,6 +14,7 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 
 import java.rmi.RemoteException;
+import java.util.List;
 
 public class VentanaChatPrivado {
     private Stage stage;
@@ -33,6 +34,11 @@ public class VentanaChatPrivado {
         stage.initOwner(owner);
 
         inicializarUI();
+        cargarMensajesPendientes();
+    }
+
+    public String getAmigo() {
+        return amigo;
     }
 
     private void inicializarUI() {
@@ -62,12 +68,30 @@ public class VentanaChatPrivado {
         stage.setScene(escenaPrivada);
     }
 
+    // enseña al usuario los mensajes sin leer que envio el remitente mientras estaba la ventana cerrada
+    private void cargarMensajesPendientes() {
+        List<String> mensajesPendientes = cliente.obtenerMensajesPendientes(amigo);
+
+        if (!mensajesPendientes.isEmpty()) {
+            Platform.runLater(() -> {
+
+                for (String mensaje : mensajesPendientes) {
+                    agregarMensaje(amigo, mensaje);
+                }
+
+                agregarMensajeSistema("--- " + mensajesPendientes.size() + " mensajes sin leer ---");
+
+                System.out.println(mensajesPendientes.size() + " mensajes pendientes de " + amigo);
+            });
+        }
+    }
+
     private void enviarMensajePrivado(TextField inputPrivado) {
         String mensaje = inputPrivado.getText().trim();
         if (!mensaje.isEmpty()) {
             try {
-                cliente.enviarMensajePrivado(usuarioActual, amigo, mensaje);
-                agregarMensaje(usuarioActual, mensaje, Color.BLUE);
+                cliente.enviarMensajePrivado(usuarioActual, mensaje, amigo);
+                agregarMensaje(usuarioActual, mensaje);
                 inputPrivado.clear();
             } catch (RemoteException ex) {
                 ErrorPopup.show("Error al enviar mensaje privado.");
@@ -75,14 +99,29 @@ public class VentanaChatPrivado {
         }
     }
 
-    public void agregarMensaje(String remitente, String mensaje, Color color) {
+    public void agregarMensaje(String remitente, String mensaje) {
         Platform.runLater(() -> {
             String timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
             String texto = "[" + timestamp + "] <" + remitente + ">: " + mensaje + "\n";
             Text textNode = new Text(texto);
-            if (color != null) {
-                textNode.setFill(color);
+
+            if (remitente.equals(usuarioActual)) {
+                textNode.setFill(Color.BLUE); //  propios en azul
+            } else {
+                textNode.setFill(Color.BLACK); // del amigo en negro
             }
+
+            chatLog.getChildren().add(textNode);
+            scrollPane.setVvalue(1.0);
+        });
+    }
+
+    // " -- x mensajes sin leer -- "
+    private void agregarMensajeSistema(String mensaje) {
+        Platform.runLater(() -> {
+            Text textNode = new Text(mensaje + "\n");
+            textNode.setFill(Color.GRAY);
+            textNode.setStyle("-fx-font-style: italic;");
             chatLog.getChildren().add(textNode);
             scrollPane.setVvalue(1.0);
         });
@@ -90,6 +129,9 @@ public class VentanaChatPrivado {
 
     public void mostrar() {
         stage.show();
+        Platform.runLater(() -> {
+            scrollPane.setVvalue(1.0);
+        });
     }
 
     public Stage getStage() {

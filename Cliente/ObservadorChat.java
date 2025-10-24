@@ -3,5 +3,6 @@ public interface ObservadorChat {
     void notificarConexion(String nombre);
     void notificarDesconexion(String nombre);
     void notificarSolicitud();
-
+    void notificarMensajesPendientes(String remitente);
+    boolean mensajeRecibidoPrivado(String remitente, String mensaje);
 }

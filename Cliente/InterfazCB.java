@@ -14,7 +14,7 @@ public interface InterfazCB extends Remote {
 
     public void recibir(String remitente, String mensaje) throws RemoteException;
     public void notificarNuevaSolicitud(String envia) throws RemoteException;
-    //TODO puta merda
+    public void recibirMensajePrivado(String remitente, String mensaje) throws RemoteException;
     public void recibirSolicitud(String mensaje) throws RemoteException;
 
     public void recibirSolicitudes(List<String> solicitudesPendientes) throws RemoteException;

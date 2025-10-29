@@ -1,10 +1,17 @@
 package controlador;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+
 public class DBManager {
+
     private Connection conn;
 
     public DBManager(String dbFile) {
@@ -24,7 +31,8 @@ public class DBManager {
         st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS usuarios (" +
                         "nombre TEXT PRIMARY KEY, " +
-                        "clave TEXT NOT NULL)");
+                        "clave TEXT NOT NULL, " + 
+                        "salt TEXT NOT NULL)");
 
         // tabla de amigos (amistad bidireccional, se añaden dos filas por amistad)
         st.executeUpdate(
@@ -78,35 +86,59 @@ public class DBManager {
     public boolean registrarUsuario(String nombre, String clave) {
         try {
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO usuarios(nombre, clave) VALUES(?, ?)");
+                    "INSERT INTO usuarios(nombre, clave, salt) VALUES(?, ?, ?)");
+            
+            byte[] salt = GestorContraseñas.generateSalt();
+            String securePasswd = GestorContraseñas.hashPassword(clave, salt);
             ps.setString(1, nombre);
-            ps.setString(2, clave);
+            ps.setString(2, securePasswd);
+            ps.setString(3, Base64.getEncoder().encodeToString(salt));
             ps.executeUpdate();
             ps.close();
+            System.out.println("Exito al registrar");
             return true;
-        } catch (SQLException e) {
+        } catch (SQLException | InvalidKeySpecException | NoSuchAlgorithmException e) {
             // si ya existe usuario
+            e.printStackTrace();
             return false;
         }
     }
 
     // validar login
     public boolean validarLogin(String nombre, String clave) {
-        try {
-            PreparedStatement ps = conn.prepareStatement(
-                    "SELECT * FROM usuarios WHERE nombre=? AND clave=?");
-            ps.setString(1, nombre);
-            ps.setString(2, clave);
-            ResultSet rs = ps.executeQuery();
-            boolean ok = rs.next();
+    try {
+        // Traer hash y salt del usuario
+        PreparedStatement ps = conn.prepareStatement(
+                "SELECT clave, salt FROM usuarios WHERE nombre=?");
+        ps.setString(1, nombre);
+        ResultSet rs = ps.executeQuery();
+
+        if (!rs.next()) {
             rs.close();
             ps.close();
-            return ok;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            return false; // usuario no encontrado
         }
+
+        String storedHash = rs.getString("clave");
+        String storedSaltBase64 = rs.getString("salt");
+        rs.close();
+        ps.close();
+
+        // Convertir salt de Base64 a byte[]
+        byte[] salt = Base64.getDecoder().decode(storedSaltBase64);
+
+        // Generar hash de la contraseña ingresada con el mismo salt
+        String hashIngresado = GestorContraseñas.hashPassword(clave, salt);
+
+        // Comparar hashes
+        return storedHash.equals(hashIngresado);
+
+    } catch (SQLException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+        e.printStackTrace();
+        return false;
     }
+}
+
 
 
     // validar login

@@ -110,7 +110,9 @@ public class VentanaCliente {
                 if(pfPasswdScene2.getText().trim().isEmpty()){
                     lblStatus.setText("Debe introducir una contraseña");
                 } else {
-                    servidor.registrarUsuario(nombreUser, pfPasswdScene2.getText().trim());
+                    System.out.println(tfNombreUser.getText().trim());
+                    System.out.println(pfPasswdScene2.getText().trim());
+                    servidor.registrarUsuario(tfNombreUser.getText().trim(), pfPasswdScene2.getText().trim());
                     stage.setScene(scene);
                 }
             } catch (Exception ex) {

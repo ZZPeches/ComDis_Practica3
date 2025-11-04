@@ -28,4 +28,6 @@ public interface InterfazCB extends Remote {
     public void errorAmigo() throws RemoteException;
 
     public void listaAmigosEnLinea(HashMap<String, InterfazCB> amigosEnLinea) throws RemoteException;
+
+    public void ping() throws RemoteException;
 }

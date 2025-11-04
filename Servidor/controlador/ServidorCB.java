@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class ServidorCB {
 
     public static void main(String[] args) {
-        // COMANDO: java -cp ".:sqlite-jdbc-3.50.3.0.jar" ServidorCB
+        
         Scanner sc = new Scanner(System.in);
         String puerto, URL;
 
@@ -29,8 +29,10 @@ public class ServidorCB {
             for (int i = 0; i < nombres.length; i++) {
                 System.out.println(nombres[i]);
             }
+            MiHilo miHilo = new MiHilo(objExp);
+            miHilo.setDaemon(true);
+            miHilo.start();
             System.out.println("Servidor listo");
-            objExp.mostrarUsuaios();
 
             sc.close();
 

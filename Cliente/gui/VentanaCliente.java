@@ -62,24 +62,30 @@ public class VentanaCliente {
 
         // --- ESCENA REGISTRO ---
         Label lblRegistro = new Label("Usuario no encontrado. Por favor, regístrese.");
+        TextField tfNombreRegistro = new TextField();
+        tfNombreRegistro.setText(nombreUser);
+        tfNombreRegistro.setPromptText("Nombre de usuario...");
         PasswordField pfPasswdScene2 = new PasswordField();
         pfPasswdScene2.setPromptText("Introduzca su contraseña");
 
         Button btnSi = new Button("Si");
         Button btnNo = new Button("No");
         HBox botonesRegistro = new HBox(10, btnSi, btnNo);
+        VBox camposTexto = new VBox(10, tfNombreRegistro,pfPasswdScene2);
 
         BorderPane root2 = new BorderPane();
         root2.setTop(lblRegistro);
-        BorderPane.setMargin(lblRegistro, new Insets(10));
+        root2.setMargin(lblRegistro, new Insets(10));
 
-        root2.setCenter(pfPasswdScene2);
+        root2.setCenter(camposTexto);
         root2.setBottom(botonesRegistro);
-        BorderPane.setMargin(botonesRegistro, new Insets(10));
+        root2.setMargin(botonesRegistro, new Insets(10));
+        root2.setPadding(new Insets(15));
 
         Scene scene2 = new Scene(root2, 400, 200);
 
         stage.setScene(scene);
+        stage.setTitle("Login usuario");
         stage.show();
 
         // --- EVENTOS ---
@@ -88,6 +94,7 @@ public class VentanaCliente {
                 nombreUser = tfNombreUser.getText().trim();
                 if(!servidor.validarUsuarioExistente(nombreUser)){
                     stage.setScene(scene2);
+                    stage.setTitle("Ventana registro usuario");
                 } else {
                     if(servidor.loginUsuario(nombreUser, pfPasswdUser.getText().trim(), cliente)){
                         VentanaUsuario ventanaUsuario = new VentanaUsuario(stage, servidor, cliente,nombreUser);
@@ -114,6 +121,7 @@ public class VentanaCliente {
                     System.out.println(pfPasswdScene2.getText().trim());
                     servidor.registrarUsuario(tfNombreUser.getText().trim(), pfPasswdScene2.getText().trim());
                     stage.setScene(scene);
+                    stage.setTitle("Login usuario");
                 }
             } catch (Exception ex) {
                 lblStatus.setText("Error: " + ex.getMessage());
@@ -128,7 +136,7 @@ public class VentanaCliente {
 
         });
 
-        btnNo.setOnAction(e -> stage.close());
+        btnNo.setOnAction(e -> stage.setScene(scene));
         btnCerrar.setOnAction(e -> stage.close());
     }
 }

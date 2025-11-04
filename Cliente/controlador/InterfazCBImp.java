@@ -177,4 +177,10 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         this.solicitudesPendientes.add(envia);
         this.observador.notificarSolicitud();
     }
+
+    @Override
+    public void ping() throws RemoteException{
+        System.out.println("Haciendo Ping...");
+    }
+
 }

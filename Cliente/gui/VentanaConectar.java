@@ -69,7 +69,7 @@ public class VentanaConectar {
 
         Scene scene = new Scene(root, 400, 200);
         stage.setScene(scene);
-        stage.setTitle("Cliente RMI JavaFX");
+        stage.setTitle("Conexión al servidor");
         stage.show();
 
     }

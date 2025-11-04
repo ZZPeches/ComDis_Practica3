@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import javafx.scene.control.PasswordField;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -65,17 +66,21 @@ public class VentanaUsuario implements ObservadorChat {
         Stage popup = new Stage();
         TextField tfNombreNuevoAmigo = new TextField();
         tfNombreNuevoAmigo.setPromptText("Nuevo Amigo...");
+        PasswordField passwdField = new PasswordField();
+        passwdField.setPromptText("Contraseña...");
 
         Button btnAgregar = new Button("Agregar");
         btnAgregar.setOnAction(e -> {
-            servidor.enviarSolicitudAmistad(nombreUser, tfNombreNuevoAmigo.getText().trim());
+            servidor.enviarSolicitudAmistad(nombreUser, tfNombreNuevoAmigo.getText().trim(), passwdField.getText().trim());
             popup.hide();
         });
 
-        VBox contenido = new VBox(10, tfNombreNuevoAmigo, btnAgregar);
+        VBox contenido = new VBox(12, tfNombreNuevoAmigo, passwdField, btnAgregar);
+        contenido.setPadding(new Insets(15));
         Scene popupScene = new Scene(contenido, 200, 150);
         popup.setScene(popupScene);
         popup.initOwner(stage);
+        popup.setTitle("Ventana Agregar Amigo");
         popup.initModality(Modality.WINDOW_MODAL);
 
         // ---------- Menú ----------

@@ -2,26 +2,33 @@ package controlador;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.*;
 
 import javafx.application.Platform;
-import javafx.collections.ObservableMap;
-import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableMap;
 
-import gui.ObservadorChat;
 import gui.ErrorPopup;
+import gui.ObservadorChat;
 
 public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
-    
-    private ObservableMap<String, InterfazCB> amigosEnLinea = FXCollections.observableHashMap();
-    private ObservableList<String> solicitudesPendientes = FXCollections.observableArrayList();
 
-    private HashMap<String, List<String>> buzonMensajesPrivados = new HashMap<>();
-    private ObservableList<String> usuariosConMensajesPendientes = FXCollections.observableArrayList();
+    private ObservadorChat observador;
 
+    // Listas de estado
+    private final ObservableMap<String, InterfazCB> amigosEnLinea = FXCollections.observableHashMap();
+    private final ObservableList<String> solicitudesPendientes = FXCollections.observableArrayList();
+    private final ObservableList<String> usuariosConMensajesPendientes = FXCollections.observableArrayList();
+
+    // Buzón para mensajes privados cuando la ventana está cerrada
+    private final Map<String, List<String>> buzonMensajesPrivados = new HashMap<>();
+
+    public InterfazCBImp() throws RemoteException {
+        super();
+    }
+
+    // Getters
     public ObservableList<String> getSolicitudesPendientes() {
         return solicitudesPendientes;
     }
@@ -30,7 +37,7 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         return amigosEnLinea;
     }
 
-    public HashMap<String, List<String>> getBuzonMensajesPrivados() {
+    public Map<String, List<String>> getBuzonMensajesPrivados() {
         return buzonMensajesPrivados;
     }
 
@@ -38,80 +45,102 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         return usuariosConMensajesPendientes;
     }
 
-    private ObservadorChat observador;
-
-    public InterfazCBImp() throws RemoteException {
-        super();
-    }
-
     public void setObservadorChat(ObservadorChat observador) {
         this.observador = observador;
     }
 
+    // ========================
+    // Eventos de conexión
+    // ========================
+
     @Override
-    public void nuevoAmigo(String id, InterfazCB amigo) throws RemoteException {
+    public void nuevoAmigo(String id, InterfazCB amigo) {
         amigosEnLinea.put(id, amigo);
     }
 
     @Override
-    public void notificarNuevaConexion(String id, InterfazCB amigo) throws RemoteException {
+    public void notificarNuevaConexion(String id, InterfazCB amigo) {
         amigosEnLinea.put(id, amigo);
-        this.observador.notificarConexion(id);
+        if (observador != null) {
+            observador.notificarConexion(id);
+        }
     }
 
     @Override
-    public void notificarDesconexion(String id, InterfazCB amigo) throws RemoteException {
+    public void notificarDesconexion(String id, InterfazCB amigo) {
         amigosEnLinea.remove(id);
-        this.observador.notificarDesconexion(id);
+        if (observador != null) {
+            observador.notificarDesconexion(id);
+        }
     }
 
+    // ========================
+    // Mensajería general
+    // ========================
+
     @Override
-    public void recibir(String remitente, String mensaje) throws RemoteException {
+    public void recibir(String remitente, String mensaje) {
         if (observador != null) {
             observador.mensajeRecibido(remitente, mensaje);
         }
     }
 
-    // logica mensaje privado:
-    // caso 1: si user1 envia "hola" a user2 pero user2 no está en linea --> error, se pierde el mensaje
-    // caso 2: si user1 envia "hola" a user2 pero user2 no tiene la ventana abierta --> se guarda en un buzon de entrada hasta que user2 abra la ventana
-    // caso 3: si user1 envia "hola" a user2 que tiene la ventana abierta --> aparece en la ventana
-    public void recibirMensajePrivado(String remitente, String mensaje) throws RemoteException {
-        if (observador != null) {
-            if(!observador.mensajeRecibidoPrivado(remitente, mensaje)){ // si el observador no ha podido mostrar el mensaje (caso 2)
-                // gardar el mensaje en el buzón del remitente
-                guardarMensajeEnBuzon(remitente, mensaje);
-                // notificar al observador que hay mensajes pendientes
-                observador.notificarMensajesPendientes(remitente);
+    @Override
+    public void enviar(String remitente, String mensaje) {
+        for (InterfazCB amigo : amigosEnLinea.values()) {
+            try {
+                amigo.recibir(remitente, mensaje);
+            } catch (Exception e) {
+                System.err.println("Error enviando mensaje público");
+                e.printStackTrace();
             }
-        } else {
-            // si no hay observador, también guardar en el buzón
-            guardarMensajeEnBuzon(remitente, mensaje);
+        }
+    }
+
+    // ========================
+    // Mensajería privada
+    // ========================
+
+    @Override
+    public void recibirMensajePrivado(String remitente, String mensaje) {
+        if (observador != null && observador.mensajeRecibidoPrivado(remitente, mensaje)) {
+            return; // ventana abierta, mensaje mostrado
+        }
+
+        guardarMensajeEnBuzon(remitente, mensaje);
+        if (observador != null) {
+            observador.notificarMensajesPendientes(remitente);
+        }
+    }
+
+    public void enviarMensajePrivado(String remitente, String mensaje, String receptor) {
+        InterfazCB amigo = amigosEnLinea.get(receptor);
+        if (amigo != null) {
+            try {
+                amigo.recibirMensajePrivado(remitente, mensaje);
+            } catch (Exception e) {
+                System.err.println("Error enviando mensaje privado");
+                e.printStackTrace();
+            }
         }
     }
 
     private void guardarMensajeEnBuzon(String remitente, String mensaje) {
-        if (!buzonMensajesPrivados.containsKey(remitente)) {
-            buzonMensajesPrivados.put(remitente, new ArrayList<>());
-            // Añadir a la lista de usuarios con mensajes pendientes
-            if (!usuariosConMensajesPendientes.contains(remitente)) {
-                Platform.runLater(() -> usuariosConMensajesPendientes.add(remitente));
-            }
+        buzonMensajesPrivados.computeIfAbsent(remitente, k -> new ArrayList<>()).add(mensaje);
+
+        if (!usuariosConMensajesPendientes.contains(remitente)) {
+            Platform.runLater(() -> usuariosConMensajesPendientes.add(remitente));
         }
-        buzonMensajesPrivados.get(remitente).add(mensaje);
     }
 
-    // metodo para recuperar mensajes pendientes de un usuario específico
     public List<String> obtenerMensajesPendientes(String remitente) {
-        List<String> mensajes = buzonMensajesPrivados.get(remitente);
+        List<String> mensajes = buzonMensajesPrivados.remove(remitente);
+
         if (mensajes != null) {
-            List<String> mensajesCopia = new ArrayList<>(mensajes);
-            mensajes.clear(); // Limpiar los mensajes ya recuperados
-            // Remover de la lista de usuarios con mensajes pendientes
             Platform.runLater(() -> usuariosConMensajesPendientes.remove(remitente));
-            return mensajesCopia;
+            return new ArrayList<>(mensajes);
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     public void limpiarMensajesPendientes(String remitente) {
@@ -119,68 +148,46 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
         Platform.runLater(() -> usuariosConMensajesPendientes.remove(remitente));
     }
 
+    // ========================
+    // Solicitudes de amistad
+    // ========================
+
     @Override
-    public void enviar(String remitente, String mensaje) throws RemoteException {
-        for (InterfazCB amigo : this.amigosEnLinea.values()) {
-            try {
-                amigo.recibir(remitente, mensaje);
-            } catch (Exception e) {
-                System.out.println("Exception en envío");
-                e.printStackTrace();
-            }
-        }
+    public void recibirSolicitud(String usuario) {
+        solicitudesPendientes.add(usuario);
     }
 
-    public void enviarMensajePrivado(String remitente, String mensaje, String receptor) throws RemoteException {
-        try {
-            InterfazCB amigo = amigosEnLinea.get(receptor);
-            if (amigo != null) {
-                amigo.recibirMensajePrivado(remitente, mensaje);
-            }
-        } catch (Exception e) {
-            System.out.println("Exception en envío privado");
-            e.printStackTrace();
-        }
+    public void recibirSolicitudes(List<String> solicitudes) {
+        Platform.runLater(() -> solicitudesPendientes.setAll(solicitudes));
     }
 
     @Override
-    public void recibirSolicitud(String mensaje) throws RemoteException {
-        System.out.println("Has recibido una solicitud de amistad de " + mensaje);
-        this.solicitudesPendientes.add(mensaje);
+    public void notificarNuevaSolicitud(String usuario) {
+        solicitudesPendientes.add(usuario);
+        if (observador != null) {
+            observador.notificarSolicitud();
+        }
     }
 
-    public void recibirSolicitudes(List<String> solicitudesPendientes) throws RemoteException {
-        Platform.runLater(() -> {
-            this.solicitudesPendientes.setAll(solicitudesPendientes);
-        });
-    }
+    // ========================
+    // Notificaciones varias
+    // ========================
 
     @Override
-    public void listaAmigosEnLinea(HashMap<String, InterfazCB> amigosConectados) throws RemoteException {
-        amigosEnLinea.putAll(amigosConectados);
-
-        System.out.println("Amigos en línea:");
-        for (String id : amigosEnLinea.keySet()) {
-            System.out.println("- " + id);
-        }
+    public void listaAmigosEnLinea(HashMap<String, InterfazCB> amigos) {
+        amigosEnLinea.putAll(amigos);
+        amigosEnLinea.keySet().forEach(id -> System.out.println("- " + id));
     }
 
     @Override
     public void errorAmigo() {
-        javafx.application.Platform.runLater(() ->
+        Platform.runLater(() ->
                 ErrorPopup.show("Error: No puedes enviar una petición de amistad a este usuario.")
         );
     }
 
     @Override
-    public void notificarNuevaSolicitud(String envia){
-        this.solicitudesPendientes.add(envia);
-        this.observador.notificarSolicitud();
-    }
-
-    @Override
-    public void ping() throws RemoteException{
+    public void ping() {
         System.out.println("Haciendo Ping...");
     }
-
 }

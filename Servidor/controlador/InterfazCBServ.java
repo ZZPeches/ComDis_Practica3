@@ -15,7 +15,7 @@ public interface InterfazCBServ extends Remote {
 
     public boolean loginUsuario(String nombre, String clave, InterfazCB objetoCli) throws RemoteException;
 
-    public boolean enviarSolicitudAmistad(String envia, String recibe) throws RemoteException;
+    public boolean enviarSolicitudAmistad(String envia, String recibe, String passwd) throws RemoteException;
 
     public java.util.List<String> obtenerAmigos(String nombre) throws RemoteException;
 

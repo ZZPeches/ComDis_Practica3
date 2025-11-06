@@ -22,13 +22,20 @@ import controlador.InterfazCBImp;
 import controlador.InterfazCBServ;
 
 public class VentanaChatPrivado {
+
     private Stage stage;
+
     private InterfazCBImp cliente;
+
     private String usuarioActual;
+
     private String amigo;
+
     private TextFlow chatLog;
+
     private ScrollPane scrollPane;
 
+    // Constructor - crea la ventana del chat privado
     public VentanaChatPrivado(Stage owner, InterfazCBImp cliente, String usuarioActual, String amigo) {
         this.stage = new Stage();
         this.cliente = cliente;
@@ -36,54 +43,65 @@ public class VentanaChatPrivado {
         this.amigo = amigo;
 
         stage.setTitle("Chat Privado con " + amigo);
-        stage.initOwner(owner);
+        stage.initOwner(owner); // hace esta ventana dependiente de la principal
 
-        inicializarUI();
-        cargarMensajesPendientes();
+        inicializarUI();        // construir interfaz
+        cargarMensajesPendientes(); // cargar mensajes acumulados si existían
     }
 
     public String getAmigo() {
         return amigo;
     }
 
+    // Configura la interfaz gráfica del chat
     private void inicializarUI() {
+
+        // Área donde aparecerán los mensajes
         chatLog = new TextFlow();
         chatLog.setPadding(new Insets(5));
 
+        // Scroll para visualizar el historial completo
         scrollPane = new ScrollPane(chatLog);
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefHeight(300);
         scrollPane.setVvalue(1.0);
 
+        // Campo de texto para escribir mensajes
         TextField inputPrivado = new TextField();
         inputPrivado.setPromptText("Mensaje para " + amigo + "...");
 
+        // Botón para enviar
         Button btnEnviarPrivado = new Button("Enviar");
         btnEnviarPrivado.setOnAction(e -> enviarMensajePrivado(inputPrivado));
 
+        // Permitir enviar mensaje presionando Enter
         inputPrivado.setOnAction(e -> enviarMensajePrivado(inputPrivado));
 
+        // Contenedor de input y botón
         HBox controlesPrivado = new HBox(5, inputPrivado, btnEnviarPrivado);
         controlesPrivado.setAlignment(Pos.CENTER);
 
+        // Layout general de la ventana
         VBox layoutPrivado = new VBox(10, new Label("Chat con " + amigo), scrollPane, controlesPrivado);
         layoutPrivado.setPadding(new Insets(15));
 
+        // Crear escena
         Scene escenaPrivada = new Scene(layoutPrivado, 400, 400);
         stage.setScene(escenaPrivada);
     }
 
-    // enseña al usuario los mensajes sin leer que envio el remitente mientras estaba la ventana cerrada
+    // Cargar mensajes que llegaron cuando la ventana estaba cerrada
     private void cargarMensajesPendientes() {
         List<String> mensajesPendientes = cliente.obtenerMensajesPendientes(amigo);
 
         if (!mensajesPendientes.isEmpty()) {
             Platform.runLater(() -> {
-
+                // Mostrar cada mensaje pendiente
                 for (String mensaje : mensajesPendientes) {
                     agregarMensaje(amigo, mensaje);
                 }
 
+                // Mostrar aviso de cantidad de mensajes pendientes
                 agregarMensajeSistema("--- " + mensajesPendientes.size() + " mensajes sin leer ---");
 
                 System.out.println(mensajesPendientes.size() + " mensajes pendientes de " + amigo);
@@ -91,12 +109,15 @@ public class VentanaChatPrivado {
         }
     }
 
+    // Enviar mensaje privado al servidor
     private void enviarMensajePrivado(TextField inputPrivado) {
         String mensaje = inputPrivado.getText().trim();
+
+        // Si el mensaje no está vacío, enviarlo
         if (!mensaje.isEmpty()) {
             try {
-                cliente.enviarMensajePrivado(usuarioActual, mensaje, amigo);
-                agregarMensaje(usuarioActual, mensaje);
+                cliente.enviarMensajePrivado(usuarioActual, mensaje, amigo); // RMI
+                agregarMensaje(usuarioActual, mensaje); // Mostrar en pantalla
                 inputPrivado.clear();
             } catch (RemoteException ex) {
                 ErrorPopup.show("Error al enviar mensaje privado.");
@@ -104,24 +125,33 @@ public class VentanaChatPrivado {
         }
     }
 
+    // Mostrar mensaje en el chat (local o recibido)
     public void agregarMensaje(String remitente, String mensaje) {
         Platform.runLater(() -> {
-            String timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+
+            // Formatear hora
+            String timestamp = java.time.LocalTime.now().format(
+                    java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+            );
+
             String texto = "[" + timestamp + "] <" + remitente + ">: " + mensaje + "\n";
             Text textNode = new Text(texto);
 
+            // Color del texto según origen
             if (remitente.equals(usuarioActual)) {
-                textNode.setFill(Color.BLUE); //  propios en azul
+                textNode.setFill(Color.BLUE); // mensajes propios
             } else {
-                textNode.setFill(Color.BLACK); // del amigo en negro
+                textNode.setFill(Color.BLACK); // mensajes del amigo
             }
 
             chatLog.getChildren().add(textNode);
+
+            // Desplazar scroll al final automáticamente
             scrollPane.setVvalue(1.0);
         });
     }
 
-    // " -- x mensajes sin leer -- "
+    // Mensaje del sistema (informativos)
     private void agregarMensajeSistema(String mensaje) {
         Platform.runLater(() -> {
             Text textNode = new Text(mensaje + "\n");
@@ -134,9 +164,7 @@ public class VentanaChatPrivado {
 
     public void mostrar() {
         stage.show();
-        Platform.runLater(() -> {
-            scrollPane.setVvalue(1.0);
-        });
+        Platform.runLater(() -> scrollPane.setVvalue(1.0));
     }
 
     public Stage getStage() {

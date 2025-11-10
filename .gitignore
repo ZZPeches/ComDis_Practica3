@@ -5,3 +5,4 @@ out/
 *.iml
 *.properties
 *.so
+Servidor/data/usuarios.db

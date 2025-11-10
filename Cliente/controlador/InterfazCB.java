@@ -15,6 +15,10 @@ public interface InterfazCB extends Remote {
 
     public void recibir(String remitente, String mensaje) throws RemoteException;
 
+    public void enviarMensajeAmigos(String remitente, String mensaje) throws RemoteException;
+
+    public void recibirMensajeAmigos(String remitente, String mensaje) throws RemoteException;
+
     public void notificarNuevaSolicitud(String envia) throws RemoteException;
 
     public void recibirMensajePrivado(String remitente, String mensaje) throws RemoteException;
@@ -24,10 +28,12 @@ public interface InterfazCB extends Remote {
     public void recibirSolicitudes(List<String> solicitudesPendientes) throws RemoteException;
 
     public void nuevoAmigo(String id, InterfazCB amigo) throws RemoteException;
-    
+
     public void errorAmigo() throws RemoteException;
 
     public void listaAmigosEnLinea(HashMap<String, InterfazCB> amigosEnLinea) throws RemoteException;
+
+    public void listaTodosUsuariosEnLinea(HashMap<String, InterfazCB> usuarios) throws RemoteException;
 
     public void ping() throws RemoteException;
 }

@@ -119,7 +119,7 @@ public class VentanaChatPrivado {
                 cliente.enviarMensajePrivado(usuarioActual, mensaje, amigo); // RMI
                 agregarMensaje(usuarioActual, mensaje); // Mostrar en pantalla
                 inputPrivado.clear();
-            } catch (RemoteException ex) {
+            } catch (Exception ex) {
                 ErrorPopup.show("Error al enviar mensaje privado.");
             }
         }

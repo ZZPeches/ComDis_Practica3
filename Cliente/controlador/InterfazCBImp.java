@@ -18,11 +18,14 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
     // Listas de estado
     private final ObservableMap<String, InterfazCB> amigosEnLinea = FXCollections.observableHashMap();
+    private final ObservableMap<String, InterfazCB> todosUsuariosEnLinea = FXCollections.observableHashMap();
     private final ObservableList<String> solicitudesPendientes = FXCollections.observableArrayList();
     private final ObservableList<String> usuariosConMensajesPendientes = FXCollections.observableArrayList();
 
     // Buzón para mensajes privados cuando la ventana está cerrada
     private final Map<String, List<String>> buzonMensajesPrivados = new HashMap<>();
+
+    private long lastPingLog = 0;
 
     public InterfazCBImp() throws RemoteException {
         super();
@@ -35,6 +38,10 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
     public ObservableMap<String, InterfazCB> getAmigosEnLinea() {
         return amigosEnLinea;
+    }
+
+    public ObservableMap<String, InterfazCB> getTodosUsuariosEnLinea() {
+        return todosUsuariosEnLinea;
     }
 
     public Map<String, List<String>> getBuzonMensajesPrivados() {
@@ -52,32 +59,46 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     // ========================
     // Eventos de conexión
     // ========================
-
     @Override
     public void nuevoAmigo(String id, InterfazCB amigo) {
         amigosEnLinea.put(id, amigo);
-    }
-
-    @Override
-    public void notificarNuevaConexion(String id, InterfazCB amigo) {
-        amigosEnLinea.put(id, amigo);
+        todosUsuariosEnLinea.put(id, amigo);
         if (observador != null) {
-            observador.notificarConexion(id);
+            observador.notificarNuevaConexionAmigo(id);
         }
     }
 
     @Override
-    public void notificarDesconexion(String id, InterfazCB amigo) {
+    public void notificarNuevaConexion(String id, InterfazCB usuario) {
+        todosUsuariosEnLinea.put(id, usuario);
+
+        if (observador != null) {
+            observador.notificarNuevaConexion(id);
+        }
+
+        System.out.println("Usuario " + id + " conectado. Total usuarios: " + todosUsuariosEnLinea.size());
+    }
+
+    @Override
+    public void notificarDesconexion(String id, InterfazCB usuario) {
+
+        // Solo notificar al observador si era amigo
+        if (observador != null) {
+            if (amigosEnLinea.containsKey(id)) {
+                observador.notificarDesconexionAmigo(id);
+            } else {
+                observador.notificarDesconexion(id);
+            }
+        }
         amigosEnLinea.remove(id);
-        if (observador != null) {
-            observador.notificarDesconexion(id);
-        }
+        todosUsuariosEnLinea.remove(id);
+
+        System.out.println("Usuario " + id + " desconectado. Total usuarios: " + todosUsuariosEnLinea.size());
     }
 
     // ========================
     // Mensajería general
     // ========================
-
     @Override
     public void recibir(String remitente, String mensaje) {
         if (observador != null) {
@@ -87,20 +108,43 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
     @Override
     public void enviar(String remitente, String mensaje) {
-        for (InterfazCB amigo : amigosEnLinea.values()) {
-            try {
-                amigo.recibir(remitente, mensaje);
-            } catch (Exception e) {
-                System.err.println("Error enviando mensaje público");
-                e.printStackTrace();
+        for (InterfazCB usuario : todosUsuariosEnLinea.values()) {
+            if (!usuario.equals(this)) { // No enviarse a sí mismo
+                try {
+                    usuario.recibir(remitente, mensaje);
+                } catch (Exception e) {
+                    System.err.println("Error enviando mensaje público a " + usuario);
+                }
             }
+        }
+    }
+
+    // ========================
+    // Mensajería a amigos
+    // ========================
+    @Override
+    public void enviarMensajeAmigos(String remitente, String mensaje) {
+        for (InterfazCB amigo : amigosEnLinea.values()) {
+            if (!amigo.equals(this)) { // No enviarse a sí mismo
+                try {
+                    amigo.recibirMensajeAmigos(remitente, mensaje);
+                } catch (Exception e) {
+                    System.err.println("Error enviando mensaje a amigo " + amigo);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void recibirMensajeAmigos(String remitente, String mensaje) {
+        if (observador != null) {
+            observador.mensajeRecibidoAmigos(remitente, mensaje);
         }
     }
 
     // ========================
     // Mensajería privada
     // ========================
-
     @Override
     public void recibirMensajePrivado(String remitente, String mensaje) {
         if (observador != null && observador.mensajeRecibidoPrivado(remitente, mensaje)) {
@@ -151,7 +195,6 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     // ========================
     // Solicitudes de amistad
     // ========================
-
     @Override
     public void recibirSolicitud(String usuario) {
         solicitudesPendientes.add(usuario);
@@ -172,22 +215,34 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     // ========================
     // Notificaciones varias
     // ========================
-
     @Override
     public void listaAmigosEnLinea(HashMap<String, InterfazCB> amigos) {
         amigosEnLinea.putAll(amigos);
-        amigosEnLinea.keySet().forEach(id -> System.out.println("- " + id));
+        System.out.println("Amigos en línea recibidos: " + amigosEnLinea.size());
+    }
+
+    @Override
+    public void listaTodosUsuariosEnLinea(HashMap<String, InterfazCB> usuarios) {
+        todosUsuariosEnLinea.putAll(usuarios);
+        System.out.println("Todos los usuarios en línea recibidos: " + todosUsuariosEnLinea.size());
     }
 
     @Override
     public void errorAmigo() {
-        Platform.runLater(() ->
-                ErrorPopup.show("Error: No puedes enviar una petición de amistad a este usuario.")
+        Platform.runLater(()
+                -> ErrorPopup.show("Error: No puedes enviar una petición de amistad a este usuario.")
         );
     }
 
+    // sobreescribe a mesma liña para non encher terminal
     @Override
     public void ping() {
-        System.out.println("Haciendo Ping...");
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastPingLog > 5000) { // cada 5 segundos
+            String timestamp = new java.text.SimpleDateFormat("HH:mm:ss").format(new java.util.Date());
+            System.out.print("\rÚltimo ping: " + timestamp + " - Cliente activo");
+            System.out.flush();
+            lastPingLog = currentTime;
+        }
     }
 }

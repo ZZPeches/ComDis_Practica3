@@ -34,9 +34,10 @@ public class VentanaUsuario implements ObservadorChat {
     private String nombreUser;
 
     private ObservableMap<String, InterfazCB> amigos;
-    private ScrollPane chatScrollPane;
-    private VBox chatLogContainer;
-    private TextFlow chatLog;
+    private ScrollPane chatGeneralScrollPane;
+    private ScrollPane chatAmigosScrollPane;
+    private TextFlow chatGeneralLog;
+    private TextFlow chatAmigosLog;
 
     private ListView<String> listaSolicitudes;
     private ListView<String> listaAmistades;
@@ -96,12 +97,12 @@ public class VentanaUsuario implements ObservadorChat {
         ObservableList<String> lista1Items = FXCollections.observableArrayList();
         actualizarListaAmigosConNotificaciones(lista1Items);
 
-        amigos.addListener((MapChangeListener.Change<? extends String, ? extends InterfazCB> change) ->
-                Platform.runLater(() -> actualizarListaAmigosConNotificaciones(lista1Items)));
+        amigos.addListener((MapChangeListener.Change<? extends String, ? extends InterfazCB> change)
+                -> Platform.runLater(() -> actualizarListaAmigosConNotificaciones(lista1Items)));
 
         cliente.getUsuariosConMensajesPendientes().addListener(
-                (javafx.collections.ListChangeListener.Change<? extends String> change) ->
-                        Platform.runLater(() -> actualizarListaAmigosConNotificaciones(lista1Items))
+                (javafx.collections.ListChangeListener.Change<? extends String> change)
+                -> Platform.runLater(() -> actualizarListaAmigosConNotificaciones(lista1Items))
         );
 
         listaAmistades = new ListView<>(lista1Items);
@@ -125,8 +126,8 @@ public class VentanaUsuario implements ObservadorChat {
             btnRechazar.setVisible(visible);
         });
 
-        listaAmistades.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) ->
-                btnChatPrivado.setVisible(newVal != null));
+        listaAmistades.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal)
+                -> btnChatPrivado.setVisible(newVal != null));
 
         // ---------- Acciones botones ----------
         btnAceptar.setOnAction(e -> {
@@ -153,43 +154,93 @@ public class VentanaUsuario implements ObservadorChat {
             }
         });
 
-        // ---------- Chat general ----------
-        chatLog = new TextFlow();
-        chatLog.setPadding(new Insets(5));
+        // ---------- Chat General (todos los usuarios) ----------
+        chatGeneralLog = new TextFlow();
+        chatGeneralLog.setPadding(new Insets(5));
 
-        chatScrollPane = new ScrollPane(chatLog);
-        chatScrollPane.setFitToWidth(true);
-        chatScrollPane.setPrefHeight(400);
-        chatScrollPane.setVvalue(1.0);
+        chatGeneralScrollPane = new ScrollPane(chatGeneralLog);
+        chatGeneralScrollPane.setFitToWidth(true);
+        chatGeneralScrollPane.setPrefHeight(400);
+        chatGeneralScrollPane.setVvalue(1.0);
 
-        chatLog.heightProperty().addListener((obs, oldHeight, newHeight) ->
-                Platform.runLater(() -> chatScrollPane.setVvalue(1.0)));
+        chatGeneralLog.heightProperty().addListener((obs, oldHeight, newHeight)
+                -> Platform.runLater(() -> chatGeneralScrollPane.setVvalue(1.0)));
 
-        TextField chatInput = new TextField();
-        chatInput.setPromptText("Escribe tu mensaje aquí...");
+        TextField chatGeneralInput = new TextField();
+        chatGeneralInput.setPromptText("Escribe tu mensaje aquí...");
 
-        Button btnEnviar = new Button("Enviar");
-        btnEnviar.setOnAction(e -> {
-            String mensaje = chatInput.getText().trim();
+        Button btnEnviarGeneral = new Button("Enviar");
+        btnEnviarGeneral.setOnAction(e -> {
+            String mensaje = chatGeneralInput.getText().trim();
             if (!mensaje.isEmpty()) {
                 try {
                     cliente.enviar(nombreUser, mensaje);
-                    this.recibirMensaje(nombreUser, mensaje);
-                } catch (RemoteException ex) {
+                    //this.recibirMensaje(nombreUser, mensaje);
+                } catch (Exception ex) {
                     ErrorPopup.show("Se ha producido un error al enviar el mensaje.");
                 }
-                chatInput.clear();
+                chatGeneralInput.clear();
             }
         });
 
-        chatInput.setOnAction(e -> btnEnviar.fire());
+        chatGeneralInput.setOnAction(e -> btnEnviarGeneral.fire());
 
-        HBox chatControls = new HBox(5, chatInput, btnEnviar);
-        chatControls.setAlignment(Pos.CENTER);
+        HBox chatGeneralControls = new HBox(5, chatGeneralInput, btnEnviarGeneral);
+        chatGeneralControls.setAlignment(Pos.CENTER);
 
-        VBox chatRoom = new VBox(5, new Label("Chat"), chatScrollPane, chatControls);
-        chatRoom.setPrefWidth(300);
-        chatRoom.setAlignment(Pos.CENTER);
+        VBox chatGeneralRoom = new VBox(5, new Label("Chat General"), chatGeneralScrollPane, chatGeneralControls);
+        chatGeneralRoom.setPrefWidth(300);
+        chatGeneralRoom.setAlignment(Pos.CENTER);
+
+        // ---------- Chat Amigos (solo amigos) ----------
+        chatAmigosLog = new TextFlow();
+        chatAmigosLog.setPadding(new Insets(5));
+
+        chatAmigosScrollPane = new ScrollPane(chatAmigosLog);
+        chatAmigosScrollPane.setFitToWidth(true);
+        chatAmigosScrollPane.setPrefHeight(400);
+        chatAmigosScrollPane.setVvalue(1.0);
+
+        chatAmigosLog.heightProperty().addListener((obs, oldHeight, newHeight)
+                -> Platform.runLater(() -> chatAmigosScrollPane.setVvalue(1.0)));
+
+        TextField chatAmigosInput = new TextField();
+        chatAmigosInput.setPromptText("Escribe tu mensaje aquí...");
+
+        Button btnEnviarAmigos = new Button("Enviar");
+        btnEnviarAmigos.setOnAction(e -> {
+            String mensaje = chatAmigosInput.getText().trim();
+            if (!mensaje.isEmpty()) {
+                try {
+                    cliente.enviarMensajeAmigos(nombreUser, mensaje);
+                    this.mensajeRecibidoAmigos(nombreUser, mensaje);
+                } catch (Exception ex) {
+                    ErrorPopup.show("Se ha producido un error al enviar el mensaje.");
+                }
+                chatAmigosInput.clear();
+            }
+        });
+
+        chatAmigosInput.setOnAction(e -> btnEnviarAmigos.fire());
+
+        HBox chatAmigosControls = new HBox(5, chatAmigosInput, btnEnviarAmigos);
+        chatAmigosControls.setAlignment(Pos.CENTER);
+
+        VBox chatAmigosRoom = new VBox(5, new Label("Chat Amigos"), chatAmigosScrollPane, chatAmigosControls);
+        chatAmigosRoom.setPrefWidth(300);
+        chatAmigosRoom.setAlignment(Pos.CENTER);
+
+        // ---------- Panel de pestañas ----------
+        TabPane tabPaneChats = new TabPane();
+
+        Tab tabChatGeneral = new Tab("Chat General", chatGeneralRoom);
+        tabChatGeneral.setClosable(false);
+
+        Tab tabChatAmigos = new Tab("Chat Amigos", chatAmigosRoom);
+        tabChatAmigos.setClosable(false);
+
+        tabPaneChats.getTabs().addAll(tabChatGeneral, tabChatAmigos);
+        tabPaneChats.setPrefWidth(300);
 
         // ---------- Layout principal ----------
         VBox vboxLista1 = new VBox(5, new Label("Amigos en línea"), listaAmistades, btnChatPrivado);
@@ -198,7 +249,7 @@ public class VentanaUsuario implements ObservadorChat {
         vboxLista1.setAlignment(Pos.TOP_CENTER);
         vboxLista2.setAlignment(Pos.TOP_CENTER);
 
-        HBox hboxListas = new HBox(10, vboxLista1, chatRoom, vboxLista2);
+        HBox hboxListas = new HBox(10, vboxLista1, tabPaneChats, vboxLista2);
         hboxListas.setPadding(new Insets(15));
         hboxListas.setAlignment(Pos.CENTER);
 
@@ -211,7 +262,7 @@ public class VentanaUsuario implements ObservadorChat {
             try {
                 servidor.eliminar(cliente, nombreUser);
                 System.exit(0);
-            } catch (RemoteException exception) {
+            } catch (Exception exception) {
                 exception.printStackTrace();
                 ErrorPopup.show("Error al salir");
             }
@@ -261,30 +312,61 @@ public class VentanaUsuario implements ObservadorChat {
         ventanaChatActual.mostrar();
     }
 
-    private void agregarLineaChat(String texto, Color color) {
+    private void agregarLineaChatGeneral(String texto, Color color) {
         Platform.runLater(() -> {
             Text textNode = new Text(texto + "\n");
-            if (color != null) textNode.setFill(color);
-            chatLog.getChildren().add(textNode);
-            chatScrollPane.setVvalue(1.0);
+            if (color != null) {
+                textNode.setFill(color);
+            }
+            chatGeneralLog.getChildren().add(textNode);
+            chatGeneralScrollPane.setVvalue(1.0);
         });
     }
 
-    private void agregarMensajeChat(String remitente, String mensaje) {
-        String timestamp = java.time.LocalTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
-        agregarLineaChat("[" + timestamp + "] <" + remitente + ">: " + mensaje, null);
+    private void agregarLineaChatAmigos(String texto, Color color) {
+        Platform.runLater(() -> {
+            Text textNode = new Text(texto + "\n");
+            if (color != null) {
+                textNode.setFill(color);
+            }
+            chatAmigosLog.getChildren().add(textNode);
+            chatAmigosScrollPane.setVvalue(1.0);
+        });
     }
 
-    private void agregarNotificacionSistema(String mensaje, Color color) {
-        agregarLineaChat(mensaje, color);
+    private void agregarMensajeChatGeneral(String remitente, String mensaje) {
+        String timestamp = java.time.LocalTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+        agregarLineaChatGeneral("[" + timestamp + "] <" + remitente + ">: " + mensaje, null);
+    }
+
+    private void agregarMensajeChatAmigos(String remitente, String mensaje) {
+        String timestamp = java.time.LocalTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+        agregarLineaChatAmigos("[" + timestamp + "] <" + remitente + ">: " + mensaje, null);
+    }
+
+    private void agregarNotificacionSistemaGeneral(String mensaje, Color color) {
+        agregarLineaChatGeneral(mensaje, color);
+    }
+
+    private void agregarNotificacionSistemaAmigos(String mensaje, Color color) {
+        agregarLineaChatAmigos(mensaje, color);
     }
 
     // ------------------------------------------------------------
     // MÉTODOS DEL OBSERVADOR
     // ------------------------------------------------------------
     public void recibirMensaje(String remitente, String mensaje) {
-        agregarMensajeChat(remitente, mensaje);
+        agregarMensajeChatGeneral(remitente, mensaje);
+        if (amigos.containsKey(remitente)) {
+            agregarMensajeChatAmigos(remitente, mensaje);
+        }
+    }
+
+    @Override
+    public void mensajeRecibidoAmigos(String remitente, String mensaje) {
+        agregarMensajeChatAmigos(remitente, mensaje);
     }
 
     @Override
@@ -298,7 +380,10 @@ public class VentanaUsuario implements ObservadorChat {
 
     @Override
     public void mensajeRecibido(String remitente, String mensaje) {
-        agregarMensajeChat(remitente, mensaje);
+        agregarMensajeChatGeneral(remitente, mensaje);
+        if (amigos.containsKey(remitente)) {
+            agregarMensajeChatAmigos(remitente, mensaje);
+        }
     }
 
     @Override
@@ -316,13 +401,23 @@ public class VentanaUsuario implements ObservadorChat {
     }
 
     @Override
-    public void notificarConexion(String nombre) {
-        agregarNotificacionSistema(nombre + " se ha conectado.", Color.GREEN);
+    public void notificarNuevaConexion(String nombre) {
+        agregarNotificacionSistemaGeneral(nombre + " se ha conectado.", Color.GREEN);
     }
 
     @Override
     public void notificarDesconexion(String nombre) {
-        agregarNotificacionSistema(nombre + " se ha desconectado.", Color.RED);
+        agregarNotificacionSistemaGeneral(nombre + " se ha desconectado.", Color.RED);
+    }
+
+    @Override
+    public void notificarNuevaConexionAmigo(String nombre) {
+        agregarNotificacionSistemaAmigos(nombre + " se ha conectado.", Color.GREEN);
+    }
+
+    @Override
+    public void notificarDesconexionAmigo(String nombre) {
+        agregarNotificacionSistemaAmigos(nombre + " se ha desconectado.", Color.RED);
     }
 
     @Override

@@ -137,6 +137,12 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
     @Override
     public void recibirMensajeAmigos(String remitente, String mensaje) {
+        // Validar que el remitente está en la lista de amigos
+        if (!amigosEnLinea.containsKey(remitente)) {
+            System.err.println("Intento de mensaje de amigos desde usuario no autorizado: " + remitente);
+            return;
+        }
+
         if (observador != null) {
             observador.mensajeRecibidoAmigos(remitente, mensaje);
         }
@@ -147,6 +153,12 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
     // ========================
     @Override
     public void recibirMensajePrivado(String remitente, String mensaje) {
+        // Validar que el remitente está en la lista de amigos
+        if (!amigosEnLinea.containsKey(remitente)) {
+            System.err.println("Intento de mensaje privado desde usuario no autorizado: " + remitente);
+            return;
+        }
+
         if (observador != null && observador.mensajeRecibidoPrivado(remitente, mensaje)) {
             return; // ventana abierta, mensaje mostrado
         }
@@ -229,9 +241,7 @@ public class InterfazCBImp extends UnicastRemoteObject implements InterfazCB {
 
     @Override
     public void errorAmigo() {
-        Platform.runLater(()
-                -> ErrorPopup.show("Error: No puedes enviar una petición de amistad a este usuario.")
-        );
+        Platform.runLater(() -> ErrorPopup.show("Error: No puedes enviar una petición de amistad a este usuario."));
     }
 
     // sobreescribe a mesma liña para non encher terminal
